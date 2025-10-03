@@ -43,7 +43,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       context,
     ).showSnackBar(const SnackBar(content: Text('Account created (demo).')));
 
-    // Navigate somewhere (e.g., to home or login)
     // Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -56,10 +55,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back_rounded),
+        automaticallyImplyLeading: false, // <-- no back button
+        title: const Text(
+          'Sign up',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Column(
@@ -90,12 +91,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         decoration: const InputDecoration(
                           hintText: 'Full Name',
                         ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Please enter your full name';
-                          }
-                          return null;
-                        },
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Please enter your full name'
+                            : null,
                       ),
                       const SizedBox(height: 16),
 
@@ -113,9 +111,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                           );
                           if (value.isEmpty) return 'Please enter your email';
-                          if (!emailRegex.hasMatch(value)) {
+                          if (!emailRegex.hasMatch(value))
                             return 'Enter a valid email';
-                          }
                           return null;
                         },
                       ),
@@ -219,8 +216,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             backgroundColor: theme.colorScheme.surface,
                             side: BorderSide(
                               color: theme.brightness == Brightness.dark
-                                  ? const Color(0xFF44403C) // ~stone-700
-                                  : const Color(0xFFD6D3D1), // ~stone-300
+                                  ? const Color(0xFF44403C)
+                                  : const Color(0xFFD6D3D1),
                             ),
                             minimumSize: const Size.fromHeight(48),
                             shape: RoundedRectangleBorder(
@@ -257,10 +254,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             style: TextStyle(color: subtleText, fontSize: 14),
                           ),
                           TextButton(
-                            onPressed: () {
-                              // Navigate to login
-                              Navigator.of(context).pushNamed('/login');
-                            },
+                            onPressed: () =>
+                                Navigator.of(context).pushNamed('/login'),
                             style: TextButton.styleFrom(
                               foregroundColor: KiKhaboApp.kPrimary,
                               textStyle: const TextStyle(
@@ -277,8 +272,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ),
 
-            // Footer image (kept simple; you can turn this into a widget/asset)
-            // Matches the aspect ratio feel of your HTML footer background.
+            // Footer image
             AspectRatio(
               aspectRatio: 390 / 120,
               child: Container(

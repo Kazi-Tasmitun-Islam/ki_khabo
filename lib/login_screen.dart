@@ -63,10 +63,7 @@ class _LoginScreenState extends State<LoginScreen>
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 56,
-        leading: IconButton(
-          onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        ),
+        automaticallyImplyLeading: false, // <-- no back button
         title: const Text(
           'Login',
           style: TextStyle(fontWeight: FontWeight.bold),
