@@ -2,18 +2,67 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'main.dart' show KiKhaboApp;
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fadeCtrl;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Faster fade/slide
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.035),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic));
+
+    // Start fade AFTER the Hero/route transition completes.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final route = ModalRoute.of(context);
+      final anim = route?.animation;
+      if (anim == null || anim.status == AnimationStatus.completed) {
+        _fadeCtrl.forward();
+      } else {
+        anim.addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            _fadeCtrl.forward();
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subtleColor = theme.brightness == Brightness.dark
+    final subtle = theme.brightness == Brightness.dark
         ? KiKhaboApp.kSubtleDark
         : KiKhaboApp.kSubtleLight;
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 56,
         leading: IconButton(
           onPressed: () => Navigator.maybePop(context),
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -22,114 +71,203 @@ class LoginScreen extends StatelessWidget {
           'Login',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 8),
-                    const _EmailOrPhoneField(),
-                    const SizedBox(height: 16),
-                    const _PasswordField(),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: Forgot password flow
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: subtleColor,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                        child: const Text('Forgot Password?'),
-                      ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560, minHeight: 480),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Hero brand (arrives first)
+                  const Hero(
+                    tag: 'brand-hero',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: _BrandLogoTitle(iconSize: 64, titleSize: 24),
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Perform login
-                      },
-                      child: const Text('Login'),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: theme.dividerColor)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            'Or login with',
-                            style: TextStyle(color: subtleColor, fontSize: 13),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: theme.dividerColor)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _SocialButton(
-                            label: 'Facebook',
-                            svg: _fbSvg,
-                            onPressed: () {
-                              // TODO: Facebook login
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SocialButton(
-                            label: 'Google',
-                            svg: _googleSvg,
-                            onPressed: () {
-                              // TODO: Google login
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+                  const SizedBox(height: 24),
 
-            // Footer
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Center(
-                child: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't have an account? ",
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/signup');
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: KiKhaboApp.kPrimary,
+                  // Everything below fades/slides in together (including footer line)
+                  FadeTransition(
+                    opacity: _fade,
+                    child: SlideTransition(
+                      position: _slide,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const _EmailOrPhoneField(),
+                          const SizedBox(height: 16),
+                          const _PasswordField(),
+                          const SizedBox(height: 8),
+
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                /* TODO: Forgot password */
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: subtle,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              child: const Text('Forgot Password?'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                /* TODO: login */
+                              },
+                              child: const Text('Login'),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(color: theme.dividerColor),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Text(
+                                  'Or login with',
+                                  style: TextStyle(color: subtle, fontSize: 13),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(color: theme.dividerColor),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                /* TODO: Google sign-in */
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.surface,
+                                side: BorderSide(
+                                  color: theme.brightness == Brightness.dark
+                                      ? const Color(0xFF44403C)
+                                      : const Color(0xFFD6D3D1),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SvgPicture.string(
+                                    _googleSvg,
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text('Google'),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Footer line is now part of the fade/slide group
+                          Center(
+                            child: Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                const Text(
+                                  "Don't have an account? ",
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(
+                                    context,
+                                  ).pushNamed('/signup'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: KiKhaboApp.kPrimary,
+                                    textStyle: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  child: const Text('Sign up'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                       ),
-                      child: const Text('Sign up'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Fitted brand (matches splash hero widget) to avoid overflow during flight.
+class _BrandLogoTitle extends StatelessWidget {
+  const _BrandLogoTitle({required this.iconSize, required this.titleSize});
+  final double iconSize;
+  final double titleSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.fastfood_rounded,
+            size: iconSize,
+            color: KiKhaboApp.kPrimary,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ki Khabo',
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              fontSize: titleSize,
+              height: 1.1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: KiKhaboApp.kPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -137,7 +275,6 @@ class LoginScreen extends StatelessWidget {
 
 class _EmailOrPhoneField extends StatelessWidget {
   const _EmailOrPhoneField();
-
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -150,14 +287,12 @@ class _EmailOrPhoneField extends StatelessWidget {
 
 class _PasswordField extends StatefulWidget {
   const _PasswordField();
-
   @override
   State<_PasswordField> createState() => _PasswordFieldState();
 }
 
 class _PasswordFieldState extends State<_PasswordField> {
   bool _obscure = true;
-
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -172,50 +307,6 @@ class _PasswordFieldState extends State<_PasswordField> {
     );
   }
 }
-
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.label,
-    required this.svg,
-    required this.onPressed,
-  });
-
-  final String label;
-  final String svg;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: theme.colorScheme.surface,
-        side: BorderSide.none,
-        minimumSize: const Size.fromHeight(48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        foregroundColor: theme.textTheme.bodyMedium?.color,
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.string(svg, width: 20, height: 20),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      ),
-    );
-  }
-}
-
-/// Inline SVGs (kept local)
-const String _fbSvg = '''
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-<path fill="#1877F2" d="M22.676 0H1.324C.593 0 0 .593 0 1.324v21.352C0 23.407.593 24 1.324 24h11.494v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.593 1.323-1.324V1.324C24 .593 23.407 0 22.676 0z"/>
-</svg>
-''';
 
 const String _googleSvg = '''
 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'main.dart' show KiKhaboApp;
+import 'login_screen.dart'; // so we can use PageRouteBuilder with custom duration
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,11 +23,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     );
     _scaleCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
@@ -38,11 +39,17 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeCtrl.forward();
     _scaleCtrl.forward();
 
-    // Navigate to Login after progress finishes
-    Timer(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+    // Navigate with a slower route so the Hero flight isn't “too fast”.
+    Timer(const Duration(milliseconds: 2300), () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          settings: const RouteSettings(name: '/login'),
+          transitionDuration: const Duration(milliseconds: 1200),
+          reverseTransitionDuration: const Duration(milliseconds: 800),
+          pageBuilder: (_, __, ___) => const LoginScreen(),
+        ),
+      );
     });
   }
 
@@ -69,27 +76,18 @@ class _SplashScreenState extends State<SplashScreen>
               scale: _scale,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Icon (using Material icon instead of the HTML path)
-                  Icon(
-                    Icons.fastfood_rounded,
-                    size: 96,
-                    color: KiKhaboApp.kPrimary,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Ki Khabo',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: KiKhaboApp.kPrimary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+                children: const [
+                  // HERO: wraps a fitted brand to avoid overflow during hero flight
+                  Hero(
+                    tag: 'brand-hero',
+                    // Material prevents default “ink” effects during flight
+                    child: Material(
+                      color: Colors.transparent,
+                      child: _BrandLogoTitle(iconSize: 96, titleSize: 32),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Rounded progress bar that fills over ~2.5s
-                  _AnimatedLoadingBar(
-                    duration: const Duration(milliseconds: 2500),
-                  ),
+                  SizedBox(height: 24),
+                  _AnimatedLoadingBar(duration: Duration(milliseconds: 1800)),
                 ],
               ),
             ),
@@ -138,6 +136,46 @@ class _AnimatedLoadingBar extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Re-usable brand. FittedBox keeps it from overflowing in tight hero layouts.
+class _BrandLogoTitle extends StatelessWidget {
+  const _BrandLogoTitle({required this.iconSize, required this.titleSize});
+
+  final double iconSize;
+  final double titleSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.fastfood_rounded,
+            size: iconSize,
+            color: KiKhaboApp.kPrimary,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ki Khabo',
+            maxLines: 1, // avoid multi-line wrap during flight
+            softWrap: false,
+            overflow: TextOverflow.visible,
+            style: TextStyle(
+              fontSize: titleSize,
+              height: 1.1, // tighter line-height to reduce vertical size
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: KiKhaboApp.kPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
