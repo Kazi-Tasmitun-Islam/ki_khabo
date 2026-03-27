@@ -110,9 +110,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           final emailRegex = RegExp(
                             r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                           );
-                          if (value.isEmpty) return 'Please enter your email';
-                          if (!emailRegex.hasMatch(value))
+                          if (value.isEmpty) { return 'Please enter your email'; }
+                          if (!emailRegex.hasMatch(value)) {
                             return 'Enter a valid email';
+                          }
                           return null;
                         },
                       ),
@@ -133,8 +134,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         validator: (v) {
                           final value = v?.trim() ?? '';
-                          if (value.isEmpty)
+                          if (value.isEmpty) {
                             return 'Please enter your mobile number';
+                          }
                           if (value.replaceAll(RegExp(r'[^0-9]'), '').length <
                               8) {
                             return 'Enter a valid mobile number';

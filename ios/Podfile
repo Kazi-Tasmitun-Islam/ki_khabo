@@ -39,5 +39,34 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO' if config.build_settings['SDKROOT'] == 'iphonesimulator' || config.name == 'Debug'
+    end
+  end
+
+  # Fix for "detritus not allowed" and "Failed to codesign" errors
+  project_path = 'Runner.xcodeproj'
+  project = Xcodeproj::Project.open(project_path)
+  runner_target = project.targets.find { |t| t.name == 'Runner' }
+  if runner_target
+    runner_target.build_configurations.each do |config|
+      if config.build_settings['SDKROOT'] == 'iphonesimulator' || config.name == 'Debug'
+        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      end
+    end
+
+    phase_name = 'Strip Detritus'
+    existing_phase = runner_target.shell_script_build_phases.find { |p| p.name == phase_name }
+    if existing_phase
+      # Move existing phase to the front and update script
+      runner_target.build_phases.insert(0, runner_target.build_phases.delete(existing_phase))
+      existing_phase.shell_script = 'find "${SRCROOT}/.." -type d -name "*.framework" -print0 | xargs -0 xattr -cr 2>/dev/null; find "${BUILT_PRODUCTS_DIR}" -type f -print0 | xargs -0 xattr -cr 2>/dev/null; true'
+    else
+      phase = runner_target.new_shell_script_build_phase(phase_name)
+      phase.shell_script = 'find "${SRCROOT}/.." -type d -name "*.framework" -print0 | xargs -0 xattr -cr 2>/dev/null; find "${BUILT_PRODUCTS_DIR}" -type f -print0 | xargs -0 xattr -cr 2>/dev/null; true'
+      phase.show_env_vars_in_log = '0'
+      runner_target.build_phases.insert(0, runner_target.build_phases.delete(phase))
+    end
+    project.save
   end
 end

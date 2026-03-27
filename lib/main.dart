@@ -31,7 +31,6 @@ class KiKhaboApp extends StatelessWidget {
       colorScheme: ColorScheme.fromSeed(
         seedColor: kPrimary,
         primary: kPrimary,
-        background: kBackgroundLight,
         surface: kSurfaceLight,
         brightness: Brightness.light,
       ),
@@ -90,7 +89,6 @@ class KiKhaboApp extends StatelessWidget {
       colorScheme: ColorScheme.fromSeed(
         seedColor: kPrimary,
         primary: kPrimary,
-        background: kBackgroundDark,
         surface: kSurfaceDark,
         brightness: Brightness.dark,
       ),
